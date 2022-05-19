@@ -99,35 +99,61 @@ def compute_averaged_embedding_dist(t1_embeddings, t2_embeddings):
     dist = 1.0 - cosine_similarity([t1_mean], [t2_mean])[0][0]
     return dist
 
-
 def compute_divergence_from_cluster_labels(embeds1, embeds2, labels1, labels2, weights1, weights2, treshold):
+    label_list_1 = sorted(list(set(list(labels1))))
+    label_list_2 = sorted(list(set(list(labels2))))
     labels_all = list(np.concatenate((labels1, labels2)))
-    n_senses = list(set(labels_all))
+    n_senses = set(labels_all)
     counts1 = Counter(labels1)
     counts2 = Counter(labels2)
+    not_enough_elements = set()
+    missing_elements_weights_1 = 0
+    missing_elements_weights_2 = 0
 
+    #check legit clusters
+    for l, c in zip(labels1, weights1):
+        if counts1[l] + counts2[l] <= treshold:
+            missing_elements_weights_1 += c
+            not_enough_elements.add(l)
+    for l, c in zip(labels2, weights2):
+        if counts1[l] + counts2[l] <= treshold:
+            missing_elements_weights_2 += c
+            not_enough_elements.add(l)
+    for el in not_enough_elements:
+        n_senses.remove(el)
+
+    #generate distributions
     t1 = defaultdict(int)
     for l, c in zip(labels1, weights1):
         if counts1[l] + counts2[l] > treshold:
             t1[l] += c
+    not_in_t1 = list(n_senses - set(t1.keys()))
+    for l in not_in_t1:
+        t1[l] = 0
     t1 = sorted(t1.items(), key=lambda x: x[0])
-    t1_dist = np.array([x[1] / sum(weights1) for x in t1])
+    t1_dist = np.array([x[1] / (sum(weights1) - missing_elements_weights_1) for x in t1])
 
     t2 = defaultdict(int)
     for l, c in zip(labels2, weights2):
         if counts1[l] + counts2[l] > treshold:
             t2[l] += c
+    not_in_t2 = list(n_senses - set(t2.keys()))
+    for l in not_in_t2:
+        t2[l] = 0
     t2 = sorted(t2.items(), key=lambda x: x[0])
-    t2_dist = np.array([x[1] / sum(weights2) for x in t2])
-    label_list = sorted(list(n_senses))
+    t2_dist = np.array([x[1] / (sum(weights2) - missing_elements_weights_2) for x in t2])
+    if len(t1_dist) == 0 or len(t2_dist) == 0:
+        return 0, 0
 
-    emb1_means = np.array([np.mean(embeds1[labels1 == clust], 0) for clust in label_list])
-    emb2_means = np.array([np.mean(embeds2[labels2 == clust], 0) for clust in label_list])
+    shape = embeds1[0].shape
+    emb1_means = np.array([np.mean(embeds1[labels1 == clust], 0) if clust in label_list_1 else np.zeros(shape) for clust in n_senses])
+    emb2_means = np.array([np.mean(embeds2[labels2 == clust], 0) if clust in label_list_2 else np.zeros(shape) for clust in n_senses])
     M = np.nan_to_num(np.array([cdist(emb1_means, emb2_means, metric='cosine')])[0], nan=1)
 
     wass = ot.emd2(t1_dist, t2_dist, M)
     jsd = compute_jsd(t1_dist, t2_dist)
     return jsd, wass
+
 
 
 def detect_meaning_gain_and_loss(labels1, labels2, treshold):
@@ -178,10 +204,7 @@ def compute_divergence_across_many_periods(embeddings, counts, labels, splits, c
     all_meanings = []
     for i in range(len(all_clusters)):
         if i < len(all_clusters) -1:
-            try:
-                jsd, wass = compute_divergence_from_cluster_labels(all_embeddings[i],all_embeddings[i+1], all_clusters[i],all_clusters[i+1], all_counts[i], all_counts[i+1], treshold)
-            except:
-                jsd, wass = 0, 0
+            jsd, wass = compute_divergence_from_cluster_labels(all_embeddings[i],all_embeddings[i+1], all_clusters[i],all_clusters[i+1], all_counts[i], all_counts[i+1], treshold)
             meaning, meaning_score = detect_meaning_gain_and_loss(all_clusters[i],all_clusters[i+1], treshold)
             all_meanings.append(meaning)
             try:
@@ -299,11 +322,8 @@ if __name__ == '__main__':
             for idx in range(len(emb[cs])):
 
                 #get summed embedding and its count, devide embedding by count
-                try:
-                    e, count_emb = emb[cs][idx]
-                    e = e/count_emb
-                except:
-                    e = emb[cs][idx]
+                e, count_emb = emb[cs][idx]
+                e = e/count_emb
 
                 sents = set()
 
