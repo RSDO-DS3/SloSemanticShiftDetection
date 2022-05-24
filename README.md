@@ -1,9 +1,24 @@
-# Semantic Change Detection
+# A System for Semantic Change Detection
+
+V tem repozitoriju se nahaja rezultat aktivnosti A3.3 - R3.3.4 Orodje za prepoznavanje semantičnih premikov ter izvajanje diahronih analiz, ki je nastalo v okviru projekta [Razvoj slovenščine v digitalnem okolju](https://slovenscina.eu).
+
+---
+
+We propose a novel scalable method for word usage-change detection that offers large gains in processing time and 
+significant memory savings while offering the same interpretability and better performance than unscalable methods.
+
+For more details, [see the conference paper](https://aclanthology.org/2021.naacl-main.369/), published in Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics.
+
+## Project structure
+
+- `resources/` contain language resources (e.g. a list of stopwords) required for running the script on Slovenian datasets.
+- `embeddings/` is a placeholder for generated temporal embeddings.
+- `data/` contains example dataset.
+
+
+## Setup ##
 
 Instructions for installation assume the usage of PyPI package manager.<br/>
-
-
-## Installation, documentation ##
 
 Install dependencies if needed: pip install -r requirements.txt <br/>
 You also need to download 'tokenizers/punkt/english.pickle' using nltk library.
@@ -114,6 +129,19 @@ python interpretation.py  --target_words "diplomat,objava" --lang slo --input_di
 **1.) An image showing a distribution of word usages for each target word** <br/>
 **2.) A tsv document per each target word containing information about sentences in which it appeared and into which cluster was each usage clustered** <br/>
 
+---
+
+> Operacijo Razvoj slovenščine v digitalnem okolju sofinancirata Republika Slovenija in Evropska unija iz Evropskega sklada za regionalni razvoj. Operacija se izvaja v okviru Operativnega programa za izvajanje evropske kohezijske politike v obdobju 2014-2020.
+
+![](Logo_EKP_sklad_za_regionalni_razvoj_SLO_slogan.jpg)
+
+----
+
+SloCOREF tool (modeling and training) was partly financed by [CLARIN.SI](https://www.clarin.si).
+
+<center>
+	<img src="clarin-logo.png" width="500pt" />
+<center>
 
 
 
